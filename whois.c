@@ -901,8 +901,12 @@ static void find_referral_server_arin(char **referral_server, const char *buf)
 	*referral_server = strdup(p + 9);
     else if ((p = strstr(buf, "whois://")))
 	*referral_server = strdup(p + 8);
-    else
-	*referral_server = strdup(buf + 17);
+    else {
+	char *q = (char *) buf + 15;	/* skip the "ReferralServer:" label */
+	while (*q == ' ' || *q == '\t')	/* then skip leading white space */
+	    q++;
+	*referral_server = strdup(q);
+    }
     if (*referral_server && (p = strpbrk(*referral_server, "/")))
 	*p = '\0';
 }
@@ -1397,7 +1401,7 @@ void split_server_port(const char *const input,
 
     /* change the server name to lower case */
     for (p = (char *) *server; *p; p++)
-	*p = tolower(*p);
+	*p = tolower((unsigned char) *p);
 }
 
 char *convert_6to4(const char *s)
@@ -1419,6 +1423,9 @@ char *convert_6to4(const char *s)
 	b = 0;
     }
 
+    if (a > 0xffff || b > 0xffff)	/* an IPv6 hextet cannot exceed 16 bits */
+	return strdup("0.0.0.0");
+
     new = malloc(sizeof("255.255.255.255"));
     sprintf(new, "%u.%u.%u.%u", a >> 8, a & 0xff, b >> 8, b & 0xff);
 
@@ -1431,6 +1438,9 @@ char *convert_teredo(const char *s)
     unsigned int a, b;
 
     if (sscanf(s, "2001:%*[^:]:%*[^:]:%*[^:]:%*[^:]:%*[^:]:%x:%x", &a, &b) != 2)
+	return strdup("0.0.0.0");
+
+    if (a > 0xffff || b > 0xffff)	/* an IPv6 hextet cannot exceed 16 bits */
 	return strdup("0.0.0.0");
 
     a ^= 0xffff;
