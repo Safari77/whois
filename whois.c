@@ -1010,6 +1010,7 @@ char *query_server(const char *server, const char *port, const char *query)
     free(temp);
 
     while (fgets(buf, sizeof(buf), fi)) {
+	alarm(20);				/* reset the timeout */
 	if ((p = strpbrk(buf, "\r\n")))		/* remove the trailing CR/LF */
 	    *p = '\0';
 
@@ -1084,7 +1085,7 @@ int openconn(const char *server, const char *port)
     if (AFL_MODE)
 	return dup(0);
 
-    alarm(60);
+    alarm(20);
 
 #ifdef HAVE_GETADDRINFO
     memset(&hints, 0, sizeof(struct addrinfo));
